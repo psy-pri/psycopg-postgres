@@ -1,2 +1,3 @@
 /myenv
-.env
+config.ini
+databaseconfig.py
