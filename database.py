@@ -10,23 +10,23 @@ config_object.read("config.ini")
 creds = config_object['creds']
 
 class Database:
-    connection_pool = None
+    __connection_pool = None
     
     @classmethod
-    def initialise(cls):
-        cls.connection_pool = pool.SimpleConnectionPool(1,5,database=creds['db'],user=creds['user'],password=creds['passwd'])
+    def initialise(cls,**kwargs):
+        cls.__connection_pool = pool.SimpleConnectionPool(1,5,**kwargs)
     
     @classmethod
     def get_connection(cls):
-        return cls.connection_pool.getconn()
+        return cls.__connection_pool.getconn()
     
     @classmethod
     def put_connection(cls,connection):
-        cls.connection_pool.putconn(connection)
+        cls.__connection_pool.putconn(connection)
     
     @classmethod
     def close_all_connections(cls):
-        Database.connection_pool.closeall()
+        Database.__connection_pool.closeall()
 
 class CursorFromConnectionFromPool:
     def __init__(self):
