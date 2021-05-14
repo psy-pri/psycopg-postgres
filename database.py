@@ -9,22 +9,40 @@ config_object.read("config.ini")
 # Get the creds
 creds = config_object['creds']
 
-connectionpool = pool.SimpleConnectionPool(
-    1,
-    5,
-    database=creds['db'],
-    user=creds['user'],
-    password=creds['passwd']
-    )
+class Database:
+    connection_pool = None
+    
+    @classmethod
+    def initialise(cls):
+        cls.connection_pool = pool.SimpleConnectionPool(1,5,database=creds['db'],user=creds['user'],password=creds['passwd'])
+    
+    @classmethod
+    def get_connection(cls):
+        return cls.connection_pool.getconn()
+    
+    @classmethod
+    def put_connection(cls,connection):
+        cls.connection_pool.putconn(connection)
+    
+    @classmethod
+    def close_all_connections(cls):
+        Database.connection_pool.closeall()
 
-class ConnectionFromPool:
+class CursorFromConnectionFromPool:
     def __init__(self):
         self.connection = None
+        self.cursor = None
     
     def __enter__(self):
-        self.connection = connectionpool.getconn()
-        return self.connection
+        self.connection = Database.get_connection()
+        self.cursor = self.connection.cursor()
+        return self.cursor
     
-    def __exit__(self):
-        self.connection.commit()
-        connectionpool.putconn(self.connection)
+    def __exit__(self,exc_type, exc_value, tb):
+        if exc_type is not None:
+            tb.print_exception(exc_type, exc_value, tb)
+            self.connection.rollback()
+        else:
+            self.connection.commit()
+            self.cursor.close()
+        Database.put_connection(self.connection)
